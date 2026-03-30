@@ -2,7 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser, setCurrentUser, getAssessments, type User, type Assessment } from "@/lib/storage";
+import { getCurrentUser, setCurrentUser, getToken, setToken, getAssessments, type User, type Assessment } from "@/lib/storage";
+import { apiGetAssessments, hasBackend } from "@/lib/api";
+import PageSpinner from "@/components/PageSpinner";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -12,11 +14,19 @@ export default function DashboardPage() {
   useEffect(() => {
     const u = getCurrentUser();
     if (!u) { router.push("/auth/login"); return; }
-    setUser(u); setAssessments(getAssessments(u.id));
+    setUser(u);
+    const token = getToken();
+    if (hasBackend() && token) {
+      apiGetAssessments(token)
+        .then(data => setAssessments(data.assessments))
+        .catch(() => setAssessments(getAssessments(u.id)));
+    } else {
+      setAssessments(getAssessments(u.id));
+    }
   }, [router]);
 
-  const logout = () => { setCurrentUser(null); router.push("/"); };
-  if (!user) return null;
+  const logout = () => { setCurrentUser(null); setToken(null); router.push("/"); };
+  if (!user) return <PageSpinner />;
 
   const last = assessments[0];
 

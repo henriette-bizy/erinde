@@ -1,7 +1,9 @@
 "use client";
+import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "@/lib/storage";
+import { Activity, Thermometer, Wind, BatteryLow, Brain, AlertTriangle } from "lucide-react";
 
 export default function HomePage() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -57,22 +59,24 @@ export default function HomePage() {
         <div className="slide-up s2" style={{ position:"relative" }}>
           <div style={{ background:"white", borderRadius:20, border:"1px solid var(--border)", boxShadow:"0 20px 60px rgba(37,99,235,0.12)", padding:28 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-              <div style={{ width:36, height:36, borderRadius:10, background:"var(--blue)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🏥</div>
+              <div style={{ width:36, height:36, borderRadius:10, background:"var(--blue)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <Activity size={18} color="white" strokeWidth={2} />
+              </div>
               <div>
                 <div style={{ fontWeight:700, fontSize:14, color:"var(--text-dark)" }}>Symptom Assessment</div>
                 <div style={{ fontSize:12, color:"var(--text-light)" }}>Quick · Safe · Confidential</div>
               </div>
             </div>
             <div style={{ fontSize:12, fontWeight:600, color:"var(--text-light)", letterSpacing:1, marginBottom:10 }}>SELECT YOUR SYMPTOMS</div>
-            {[{e:"🌡️",l:"Fever",on:true},{e:"😮‍💨",l:"Cough",on:true},{e:"😴",l:"Fatigue",on:false},{e:"🤕",l:"Headache",on:false}].map(s=>(
+            {([{Icon:Thermometer,l:"Fever",on:true},{Icon:Wind,l:"Cough",on:true},{Icon:BatteryLow,l:"Fatigue",on:false},{Icon:Brain,l:"Headache",on:false}] as {Icon:React.ElementType;l:string;on:boolean}[]).map(s=>(
               <div key={s.l} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:10, marginBottom:6, background:s.on?"var(--blue-light)":"var(--bg)", border:`1px solid ${s.on?"var(--blue-mid)":"var(--border)"}` }}>
-                <span style={{ fontSize:18 }}>{s.e}</span>
+                <s.Icon size={18} color={s.on?"var(--blue)":"var(--text-mid)"} strokeWidth={1.8} />
                 <span style={{ flex:1, fontSize:13, fontWeight:500, color:s.on?"var(--blue)":"var(--text-mid)" }}>{s.l}</span>
                 {s.on && <div style={{ width:18, height:18, borderRadius:"50%", background:"var(--blue)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"white", fontWeight:700 }}>✓</div>}
               </div>
             ))}
             <div style={{ marginTop:16, padding:"14px 16px", borderRadius:12, background:"var(--amber-light)", border:"1px solid #FDE68A", display:"flex", alignItems:"center", gap:12 }}>
-              <span style={{ fontSize:22 }}>⚠️</span>
+              <AlertTriangle size={22} color="#D97706" strokeWidth={2} style={{ flexShrink:0 }} />
               <div>
                 <div style={{ fontWeight:700, fontSize:13, color:"#D97706" }}>Moderate Risk Detected</div>
                 <div style={{ fontSize:12, color:"#92400E" }}>Schedule a clinic visit within 2–3 days</div>

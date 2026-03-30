@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser, setCurrentUser, saveUser, getUsers, getAssessments, type User } from "@/lib/storage";
+import { getCurrentUser, setCurrentUser, setToken, getToken, saveUser, getUsers, getAssessments, type User } from "@/lib/storage";
+import { apiUpdateMe, apiDeleteMe, hasBackend } from "@/lib/api";
+import PageSpinner from "@/components/PageSpinner";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -19,17 +21,31 @@ export default function ProfilePage() {
     setCount(getAssessments(u.id).length);
   }, [router]);
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault(); if (!user) return;
-    const updated = { ...user, ...form };
-    const users = getUsers(); const wp = users[user.email];
-    if (wp) saveUser({ ...wp, ...form });
-    setCurrentUser(updated); setUser(updated); setSaved(true); setTimeout(()=>setSaved(false),2500);
+    const token = getToken();
+    try {
+      if (hasBackend() && token) {
+        const { user: updated } = await apiUpdateMe(token, form);
+        setCurrentUser(updated); setUser(updated);
+      } else {
+        const updated = { ...user, ...form };
+        const users = getUsers(); const wp = users[user.email];
+        if (wp) saveUser({ ...wp, ...form });
+        setCurrentUser(updated); setUser(updated);
+      }
+      setSaved(true); setTimeout(()=>setSaved(false),2500);
+    } catch { setSaved(false); }
   };
-  const deleteData = () => { if (!confirm("Delete all your data? Cannot be undone.")) return; setCurrentUser(null); router.push("/"); };
-  const logout = () => { setCurrentUser(null); router.push("/"); };
+  const deleteData = async () => {
+    if (!confirm("Delete all your data? Cannot be undone.")) return;
+    const token = getToken();
+    if (hasBackend() && token) { try { await apiDeleteMe(token); } catch { /* ignore */ } }
+    setToken(null); setCurrentUser(null); router.push("/");
+  };
+  const logout = () => { setToken(null); setCurrentUser(null); router.push("/"); };
 
-  if (!user) return null;
+  if (!user) return <PageSpinner />;
 
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)" }}>

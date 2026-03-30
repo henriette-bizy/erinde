@@ -2,13 +2,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { saveUser, setCurrentUser } from "@/lib/storage";
+import { saveUser, setCurrentUser, setToken, setGuestSession } from "@/lib/storage";
+import { apiRegister, hasBackend } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name:"", email:"", password:"", age:"", gender:"", location:"" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleGuest = () => {
+    setGuestSession();
+    router.push("/assessment");
+  };
   const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement|HTMLSelectElement>) => setForm(p=>({...p,[k]:e.target.value}));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,9 +22,20 @@ export default function RegisterPage() {
     if (!form.name||!form.email||!form.password) { setError("Please fill in all required fields."); return; }
     if (form.password.length < 8) { setError("Password must be at least 8 characters."); return; }
     setLoading(true);
-    await new Promise(r=>setTimeout(r,600));
-    const user = { id:`u_${Date.now()}`, name:form.name, email:form.email, password:form.password, age:form.age, gender:form.gender, location:form.location, createdAt:new Date().toISOString() };
-    saveUser(user); setCurrentUser(user); router.push("/dashboard");
+    try {
+      if (hasBackend()) {
+        const { user, token } = await apiRegister(form);
+        setToken(token); setCurrentUser(user);
+      } else {
+        await new Promise(r=>setTimeout(r,600));
+        const user = { id:`u_${Date.now()}`, name:form.name, email:form.email, password:form.password, age:form.age, gender:form.gender, location:form.location, createdAt:new Date().toISOString() };
+        saveUser(user); setCurrentUser(user);
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,6 +115,20 @@ export default function RegisterPage() {
             </button>
           </form>
 
+          <div style={{ display:"flex", alignItems:"center", gap:12, margin:"20px 0" }}>
+            <div style={{ flex:1, height:1, background:"var(--border)" }} />
+            <span style={{ fontSize:12, color:"var(--text-light)", fontWeight:500 }}>OR</span>
+            <div style={{ flex:1, height:1, background:"var(--border)" }} />
+          </div>
+
+          <button
+            onClick={handleGuest}
+            style={{ width:"100%", padding:"13px", fontSize:14, fontWeight:600, borderRadius:10, border:"1.5px solid var(--border)", background:"white", color:"var(--text-dark)", cursor:"pointer", transition:"all 0.15s" }}
+            onMouseOver={e=>(e.currentTarget.style.borderColor="var(--blue-mid)")}
+            onMouseOut={e=>(e.currentTarget.style.borderColor="var(--border)")}
+          >
+            Continue as Guest — No account needed
+          </button>
           <p style={{ fontSize:11, color:"var(--text-light)", marginTop:18, lineHeight:1.6, textAlign:"center" }}>
             e-RINDE does not provide medical diagnoses and is not a substitute for professional medical advice.
           </p>

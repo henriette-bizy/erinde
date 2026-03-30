@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getUsers, setCurrentUser } from "@/lib/storage";
+import { getUsers, setCurrentUser, setToken, setGuestSession } from "@/lib/storage";
+import { apiLogin, hasBackend } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,14 +11,31 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const handleGuest = () => {
+    setGuestSession();
+    router.push("/assessment");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setLoading(true);
-    await new Promise(r=>setTimeout(r,500));
-    const users = getUsers();
-    const user = users[form.email];
-    if (!user || user.password !== form.password) { setError("Invalid email or password."); setLoading(false); return; }
-    const { password: _p, ...safe } = user;
-    setCurrentUser(safe); router.push("/dashboard");
+    try {
+      if (hasBackend()) {
+        const { user, token } = await apiLogin(form.email, form.password);
+        setToken(token);
+        setCurrentUser(user);
+      } else {
+        await new Promise(r=>setTimeout(r,500));
+        const users = getUsers();
+        const user = users[form.email];
+        if (!user || user.password !== form.password) throw new Error("Invalid email or password.");
+        const { password: _p, ...safe } = user;
+        setCurrentUser(safe);
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,7 +85,25 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ marginTop:24, padding:"14px 16px", background:"var(--blue-light)", borderRadius:10, border:"1px solid var(--blue-mid)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, margin:"20px 0" }}>
+            <div style={{ flex:1, height:1, background:"var(--border)" }} />
+            <span style={{ fontSize:12, color:"var(--text-light)", fontWeight:500 }}>OR</span>
+            <div style={{ flex:1, height:1, background:"var(--border)" }} />
+          </div>
+
+          <button
+            onClick={handleGuest}
+            style={{ width:"100%", padding:"13px", fontSize:14, fontWeight:600, borderRadius:10, border:"1.5px solid var(--border)", background:"white", color:"var(--text-dark)", cursor:"pointer", transition:"all 0.15s" }}
+            onMouseOver={e=>(e.currentTarget.style.borderColor="var(--blue-mid)")}
+            onMouseOut={e=>(e.currentTarget.style.borderColor="var(--border)")}
+          >
+            Continue as Guest — No account needed
+          </button>
+          <p style={{ fontSize:11, color:"var(--text-light)", textAlign:"center", marginTop:8 }}>
+            Guest results are not saved between sessions.
+          </p>
+
+          <div style={{ marginTop:16, padding:"14px 16px", background:"var(--blue-light)", borderRadius:10, border:"1px solid var(--blue-mid)" }}>
             <p style={{ fontSize:13, color:"var(--blue)", fontWeight:600, marginBottom:2 }}>New here?</p>
             <p style={{ fontSize:12, color:"var(--text-mid)" }}>Create a free account — registration takes under 30 seconds!</p>
           </div>

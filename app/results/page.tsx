@@ -2,28 +2,39 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser, getAssessments, type Assessment } from "@/lib/storage";
+import { getCurrentUser, getAssessments, getToken, isGuest, type Assessment } from "@/lib/storage";
+import { apiGetAssessment, hasBackend } from "@/lib/api";
+import PageSpinner from "@/components/PageSpinner";
 
 function ResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [assessment, setAssessment] = useState<Assessment|null>(null);
+  const [guest, setGuest] = useState(false);
 
   useEffect(() => {
     const user = getCurrentUser();
     if (!user) { router.push("/auth/login"); return; }
+    const guestMode = isGuest(user);
+    setGuest(guestMode);
     const id = params.get("id");
-    if (!id) { router.push("/dashboard"); return; }
-    const found = getAssessments(user.id).find(a=>a.id===id);
-    if (!found) { router.push("/dashboard"); return; }
-    setAssessment(found);
+    if (!id) { router.push(guestMode?"/":"/dashboard"); return; }
+    const token = getToken();
+    if (hasBackend() && token && !guestMode) {
+      apiGetAssessment(token, id)
+        .then(data => setAssessment(data.assessment))
+        .catch(() => {
+          const found = getAssessments(user.id).find(a=>a.id===id);
+          if (!found) router.push("/dashboard"); else setAssessment(found);
+        });
+    } else {
+      const found = getAssessments(user.id).find(a=>a.id===id);
+      if (!found) { router.push(guestMode?"/":"/dashboard"); return; }
+      setAssessment(found);
+    }
   }, [router, params]);
 
-  if (!assessment) return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <p style={{ color:"var(--text-mid)" }}>Loading…</p>
-    </div>
-  );
+  if (!assessment) return <PageSpinner />;
 
   const cfg = {
     low:      { color:"#059669", bg:"var(--green-light)",  border:"#A7F3D0", icon:"✅", label:"Low Risk",      tagline:"Your symptoms appear mild. Monitor and rest at home." },
@@ -35,7 +46,10 @@ function ResultsContent() {
     <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
       <nav className="nav">
         <Link href="/" className="logo">e<span>-RINDE</span></Link>
-        <Link href="/dashboard" className="btn-ghost">← Dashboard</Link>
+        {guest
+          ? <Link href="/auth/register" className="btn-primary" style={{ fontSize:13, padding:"8px 16px" }}>Create Account to Save</Link>
+          : <Link href="/dashboard" className="btn-ghost">← Dashboard</Link>
+        }
       </nav>
 
       <div style={{ maxWidth:640, margin:"0 auto", padding:"40px 24px" }}>
@@ -95,7 +109,10 @@ function ResultsContent() {
 
         <div style={{ display:"flex", gap:12 }}>
           <Link href="/assessment" className="btn-primary" style={{ flex:1, textAlign:"center" }}>New Assessment</Link>
-          <Link href="/dashboard" className="btn-outline" style={{ flex:1, textAlign:"center" }}>Back to Dashboard</Link>
+          {guest
+            ? <Link href="/auth/register" className="btn-outline" style={{ flex:1, textAlign:"center" }}>Create Account →</Link>
+            : <Link href="/dashboard" className="btn-outline" style={{ flex:1, textAlign:"center" }}>Back to Dashboard</Link>
+          }
         </div>
         <p style={{ fontSize:11, color:"var(--text-light)", textAlign:"center", marginTop:16, lineHeight:1.6 }}>
           {new Date(assessment.date).toLocaleString()} · e-RINDE is not a diagnostic tool. Consult a healthcare professional.

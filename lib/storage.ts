@@ -55,3 +55,29 @@ export const saveAssessment = (assessment: Assessment) => {
   all.unshift(assessment);
   localStorage.setItem("erinde_assessments", JSON.stringify(all));
 };
+
+export const getToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("erinde_token");
+};
+
+export const setToken = (token: string | null) => {
+  if (typeof window === "undefined") return;
+  if (token) localStorage.setItem("erinde_token", token);
+  else localStorage.removeItem("erinde_token");
+};
+
+export const setGuestSession = () => {
+  const guest: User = {
+    id: "guest",
+    name: "Guest",
+    email: "",
+    age: "30",
+    gender: "",
+    location: "",
+    createdAt: new Date().toISOString(),
+  };
+  setCurrentUser(guest);
+};
+
+export const isGuest = (user: User | null): boolean => user?.id === "guest";
