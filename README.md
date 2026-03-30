@@ -2,8 +2,6 @@
 
 > A web application helping communities in rural and underserved areas of Africa assess health symptoms, understand risks, and know when to seek medical care.
 
-**Live Demo:** [Deploy to Vercel — see instructions below]
-
 ---
 
 ## 🏥 About
@@ -74,19 +72,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```bash
 npm run build
 npm start
-```
 
 ---
-
-## 🌐 Deployment on Vercel (Free — Recommended)
-
-1. Push this repo to GitHub (make it **public**)
-2. Go to [vercel.com](https://vercel.com) and sign up with GitHub
-3. Click **"Add New Project"**
-4. Select your `erinde` repository
-5. Click **Deploy** — Vercel auto-detects Next.js, no configuration needed
-6. Your public URL will be: `https://erinde.vercel.app` (or similar)
-
 ---
 
 ## 📁 Project Structure
@@ -116,12 +103,6 @@ erinde/
 ## 👤 Test Account
 
 Register any new account on the app — it takes under 30 seconds and no email verification is required.
-
----
-
-## 📋 SRS Document
-
-[Link to SRS Document — add your Google Doc link here]
 
 ---
 
